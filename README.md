@@ -6,7 +6,7 @@ tool that a customer can use to read in a CSV file and use it to invoke Iterable
 
 ## Invoking
 
-`scala-cli -S 2.13 src/main/scala -- test.csv <apiKey>`
+`scala-cli -S 2.13 . -- --input-file test.csv --api-key <api-key>`
 
 ## Packaging
 
