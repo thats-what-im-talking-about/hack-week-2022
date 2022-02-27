@@ -1,0 +1,16 @@
+{
+  "name": "scala-cli",
+  "argv": [
+    "/usr/local/Cellar/scala-cli/0.1.0/bin/scala-cli",
+    "bsp",
+    "--json-options",
+    "/Users/brian.lawler/Projects/hack-week-2022/.scala-build/ide-options.json",
+    "/Users/brian.lawler/Projects/hack-week-2022"
+  ],
+  "version": "0.1.0",
+  "bspVersion": "2.0.0",
+  "languages": [
+    "scala",
+    "java"
+  ]
+}
