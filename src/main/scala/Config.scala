@@ -6,8 +6,9 @@
 case class Config(
   filename: String = "",
   apiKey: String = "",
-  payloadSize: Int = 300,
-  apiBaseUrl: String = "http://localhost:9000",
+  payloadSize: Int = 4000000,
+  desiredBatchSize: Int = Integer.MAX_VALUE,
+  apiBaseUrl: String = "https://api.iterable.com",
 )
 
 object Config {
@@ -28,6 +29,10 @@ object Config {
         .action((apiKey, c) => c.copy(apiKey = apiKey))
         .valueName("<api-key>")
         .text("Your Iterable API key."),
+      opt[Int]('b', "batch-size")
+        .valueName("<num items per batch>")
+        .action((batchSize, c) => c.copy(desiredBatchSize = batchSize))
+        .text("Optional.  The desired number of users to send with each bulk request.  If not set, the batch will be constrained by the 4MB limit set by the API.")
     )
   }
 

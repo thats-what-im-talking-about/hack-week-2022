@@ -10,19 +10,31 @@ import scala.concurrent.Future
 import akka.http.scaladsl.model.headers.ModeledCustomHeader
 import akka.http.scaladsl.model.headers.ModeledCustomHeaderCompanion
 import scala.util.Try
+import scala.util.Random
 
 trait PayloadProcessor {
   def apply(config: Config, system: ActorSystem)(payload: BulkUserUpdatePayload): Future[Int]
 }
 
 object EchoPayloadProcessor extends PayloadProcessor {
-  override def apply(config: Config, system: ActorSystem)(payload: BulkUserUpdatePayload): Future[Int] = {
+override def apply(config: Config, system: ActorSystem)(payload: BulkUserUpdatePayload): Future[Int] = {
     println(Json.prettyPrint(Json.toJson(payload)))
     Future.successful(200)
   }
 }
 
-object LocalApiPayloadProcessor extends PayloadProcessor {
+object TestPayloadProcessor extends PayloadProcessor {
+  override def apply(config: Config, system: ActorSystem)(payload: BulkUserUpdatePayload): Future[Int] = {
+    val rv = Random.nextInt(100) match {
+      case i if i > 90 => 429
+      case i if i > 70 => 400
+      case _ => 200
+    }
+    Future.successful(rv)
+  }
+}
+
+object ApiPayloadProcessor extends PayloadProcessor {
   import akka.http.scaladsl.client.RequestBuilding.Post
 
   final class ApiKeyHeader(apiKey: String) extends ModeledCustomHeader[ApiKeyHeader] {
