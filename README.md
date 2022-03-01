@@ -10,4 +10,4 @@ tool that a customer can use to read in a CSV file and use it to invoke Iterable
 
 ## Packaging
 
-`scala-cli package . -o foo --assembly -S 2.13`
+`scala-cli package . -o bulkUserUpdate --assembly -S 2.13`

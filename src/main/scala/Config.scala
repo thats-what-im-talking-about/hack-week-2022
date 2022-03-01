@@ -12,13 +12,14 @@ case class Config(
 )
 
 object Config {
+  val execName = "bulkUserUpdate"
   import scopt.OParser
   val builder = OParser.builder[Config]
   val parser = {
     import builder._
     OParser.sequence(
-      programName("foo"),
-      head("foo", "0.1"),
+      programName(execName),
+      head(execName, "0.1"),
       opt[String]('i', "input-file")
         .required()
         .action((infile, c) => c.copy(filename = infile))
