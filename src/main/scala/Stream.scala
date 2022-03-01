@@ -63,7 +63,8 @@ object Stream {
   def processFlow(config: Config) = Flow.fromGraph(GraphDSL.create() { implicit b => 
     import GraphDSL.Implicits._
 
-    val process = b.add(Flow[(BulkUserUpdatePayload, Long)].mapAsyncUnordered(1) { case (payload, batchNo) => Pay.apply(config, system)(payload).map(result => (result, payload, batchNo)) })
+    val apiPayloadProcessor = ApiPayloadProcessor(config, system) _
+    val process = b.add(Flow[(BulkUserUpdatePayload, Long)].mapAsyncUnordered(5) { case (payload, batchNo) => apiPayloadProcessor(payload).map(result => (result, payload, batchNo)) })
     val throttle = b.add(Flow[(Int, BulkUserUpdatePayload, Long)].throttle(5, 1.second))
     val merge = b.add(MergePreferred[(BulkUserUpdatePayload, Long)](1, eagerComplete = true))
     val (retryQueue, retrySource) = Source.queue[(BulkUserUpdatePayload, Long)](10).preMaterialize()
