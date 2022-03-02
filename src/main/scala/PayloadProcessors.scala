@@ -54,7 +54,6 @@ object ApiPayloadProcessor extends PayloadProcessor {
     val result = for {
       resp <- Http(system).singleRequest(post)
     } yield {
-      println(s"RESULT: ${resp.status}")
       resp.status.intValue()
     }
 

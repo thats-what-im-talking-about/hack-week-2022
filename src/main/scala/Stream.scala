@@ -27,11 +27,11 @@ object Stream {
     Config(args).map { config =>
       for { 
         (parser, lineSource) <- sourceFromFile(config.filename)
-      } yield 
-        payloadSource(config, parser, lineSource)
+        result <- payloadSource(config, parser, lineSource)
           .via(processFlow(config))
           .runWith(Sink.foreach { case (status, payload, batchNo) => println(s"Processed batch ${batchNo}, status ${status}, payload contained ${payload.users.length} items.")})
           .andThen(_ => system.terminate())
+      } yield result
     }
   }
 
@@ -76,8 +76,8 @@ object Stream {
       { case (status, _, _) => status == 429 }
     ))
     
-                   merge ~> process ~> throttle ~> divertRetries
-    retrySource ~> merge.preferred
+    merge ~> process ~> throttle ~> divertRetries  // 429's are diverted to the retrySource
+    merge.preferred        <~       retrySource 
 
     FlowShape(merge.in(0), divertRetries.out)
   })
