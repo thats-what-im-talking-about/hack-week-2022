@@ -25,14 +25,20 @@ object Config {
         .required()
         .action((infile, c) => c.copy(filename = infile))
         .valueName("<file>")
-        .text("Path to your input CSV file."),
+        .validate { 
+          case name if name.endsWith(".tsv") => success
+          case name if name.endsWith(".csv") => success
+          case name if name.endsWith(".json") => success
+          case _ => failure("Filename must end with .csv, .tsv, or .json")
+        }
+        .text("Path to your input file.  Must end with .csv, .tsv, or .json"),
       opt[String]('k', "api-key")
         .required()
         .action((apiKey, c) => c.copy(apiKey = apiKey))
         .valueName("<api-key>")
         .text("Your Iterable API key."),
       opt[Int]('b', "batch-size")
-        .valueName("<num items per batch>")
+        .valueName("<items>")
         .action((batchSize, c) => c.copy(desiredBatchSize = batchSize))
         .text("Optional.  The desired number of users to send with each bulk request.  If not set, the batch will be constrained by the 4MB limit set by the API."),
       opt[Unit]("echo-only")

@@ -87,14 +87,18 @@ object Stream {
   })
 
   def sourceFromFile(filename: String): Future[(FileIngestionParser, Source[String, NotUsed])] = {
-    Source.fromIterator(scala.io.Source.fromFile(filename).getLines)
-      .prefixAndTail(1)
-      .runWith(Sink.head)
-      .map {
-        case (Seq(headerLine), contentSource) if filename.toLowerCase.endsWith(".csv") =>
-          (new FileIngestionDelimitedParser(CsvParser, headerLine), contentSource)
-        case (Seq(headerLine), contentSource) if filename.toLowerCase.endsWith(".tsv") =>
-          (new FileIngestionDelimitedParser(TsvParser, headerLine), contentSource)
-      }
+    if(filename.toLowerCase().endsWith(".json")) {
+      Future.successful((new JsonParser(), Source.fromIterator(scala.io.Source.fromFile(filename).getLines)))
+    } else {
+      Source.fromIterator(scala.io.Source.fromFile(filename).getLines)
+        .prefixAndTail(1)
+        .runWith(Sink.head)
+        .map {
+          case (Seq(headerLine), contentSource) if filename.toLowerCase.endsWith(".csv") =>
+            (new FileIngestionDelimitedParser(CsvParser, headerLine), contentSource)
+          case (Seq(headerLine), contentSource) if filename.toLowerCase.endsWith(".tsv") =>
+            (new FileIngestionDelimitedParser(TsvParser, headerLine), contentSource)
+        }
+    }
   }
 }

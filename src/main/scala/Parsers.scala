@@ -9,6 +9,8 @@ import play.api.libs.json.JsObject
 import play.api.libs.json.Json
 import play.api.libs.json.JsString
 import play.api.libs.json.JsNull
+import play.api.libs.json.JsSuccess
+import play.api.libs.json.JsError
 
 trait FileIngestionParser {
   def parseUserLine(line: String): Either[Error, ApiUserUpdateRequest]
@@ -29,6 +31,17 @@ object FieldNames {
   val CreatedAt = "createdAt"
   val CampaignId = "campaignId"
   val TemplateId = "templateId"
+}
+
+class JsonParser extends FileIngestionParser {
+  override def parseUserLine(line: String): Either[Error,ApiUserUpdateRequest] = {
+    Json.parse(line).validate[ApiUserUpdateRequest] match {
+      case JsSuccess(rqst, _) => Right(rqst)
+      case JsError(errors) => Left(Error(errors.toString, ParseError))
+    }
+  }
+
+  override def parseEventLine(line: String): Either[Error,TrackRequest] = ???
 }
 
 object CsvParser extends CSVParser(defaultCSVFormat) with DelimitedParser
