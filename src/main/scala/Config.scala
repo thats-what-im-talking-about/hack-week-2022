@@ -9,6 +9,7 @@ case class Config(
   payloadSize: Int = 4000000,
   desiredBatchSize: Int = Integer.MAX_VALUE,
   apiBaseUrl: String = "https://api.iterable.com",
+  echoOnly: Boolean = false,
 )
 
 object Config {
@@ -33,7 +34,10 @@ object Config {
       opt[Int]('b', "batch-size")
         .valueName("<num items per batch>")
         .action((batchSize, c) => c.copy(desiredBatchSize = batchSize))
-        .text("Optional.  The desired number of users to send with each bulk request.  If not set, the batch will be constrained by the 4MB limit set by the API.")
+        .text("Optional.  The desired number of users to send with each bulk request.  If not set, the batch will be constrained by the 4MB limit set by the API."),
+      opt[Unit]("echo-only")
+        .action((_, c) => c.copy(echoOnly = true))
+        .text("Dumps the API payloads but does not send them."),
     )
   }
 

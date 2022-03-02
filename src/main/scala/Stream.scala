@@ -1,21 +1,25 @@
 //> using lib "com.typesafe.akka::akka-stream:2.6.18"
 //> using lib "com.typesafe.akka::akka-actor-typed:2.6.18"
-import akka.actor.ActorSystem
-import akka.stream.scaladsl.Source
-import akka.stream.scaladsl.Flow
-import akka.stream.scaladsl.Sink
+// This will suppress slf4j warnings
+//> using lib "org.slf4j:slf4j-nop:1.7.36"
+
 import akka.NotUsed
-import scala.concurrent.ExecutionContext.Implicits.global
-import play.api.libs.json.Json
-import scala.concurrent.Future
-import play.api.libs.json.JsObject
-import akka.stream.scaladsl.GraphDSL
+import akka.actor.ActorSystem
 import akka.stream.ClosedShape
-import akka.stream.scaladsl.Merge
-import scala.concurrent.duration._
 import akka.stream.FlowShape
 import akka.stream.scaladsl.Broadcast
+import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.GraphDSL
+import akka.stream.scaladsl.Merge
 import akka.stream.scaladsl.MergePreferred
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.Source
+import play.api.libs.json.JsObject
+import play.api.libs.json.Json
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.concurrent.duration._
 
 case class BulkUserUpdatePayload(users: Seq[JsObject] = Seq.empty)
 object BulkUserUpdatePayload { implicit val fmt = Json.format[BulkUserUpdatePayload] }
@@ -63,7 +67,7 @@ object Stream {
   def processFlow(config: Config) = Flow.fromGraph(GraphDSL.create() { implicit b => 
     import GraphDSL.Implicits._
 
-    val apiPayloadProcessor = ApiPayloadProcessor(config, system) _
+    val apiPayloadProcessor = if(config.echoOnly) EchoPayloadProcessor(config, system) _ else ApiPayloadProcessor(config, system) _
     val process = b.add(Flow[(BulkUserUpdatePayload, Long)].mapAsyncUnordered(5) { case (payload, batchNo) => apiPayloadProcessor(payload).map(result => (result, payload, batchNo)) })
     val throttle = b.add(Flow[(Int, BulkUserUpdatePayload, Long)].throttle(5, 1.second))
     val merge = b.add(MergePreferred[(BulkUserUpdatePayload, Long)](1, eagerComplete = true))
@@ -87,8 +91,10 @@ object Stream {
       .prefixAndTail(1)
       .runWith(Sink.head)
       .map {
-        case (Seq(headerLine), contentSource) =>
+        case (Seq(headerLine), contentSource) if filename.toLowerCase.endsWith(".csv") =>
           (new FileIngestionDelimitedParser(CsvParser, headerLine), contentSource)
+        case (Seq(headerLine), contentSource) if filename.toLowerCase.endsWith(".tsv") =>
+          (new FileIngestionDelimitedParser(TsvParser, headerLine), contentSource)
       }
   }
 }
