@@ -33,7 +33,7 @@ object FieldNames {
   val TemplateId = "templateId"
 }
 
-class JsonParser extends FileIngestionParser {
+object JsonParser extends FileIngestionParser {
   override def parseUserLine(line: String): Either[Error,ApiUserUpdateRequest] = {
     Json.parse(line).validate[ApiUserUpdateRequest] match {
       case JsSuccess(rqst, _) => Right(rqst)
