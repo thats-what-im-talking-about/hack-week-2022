@@ -9,6 +9,8 @@ case class Config(
   payloadSize: Int = 4000000,
   desiredBatchSize: Int = Integer.MAX_VALUE,
   apiBaseUrl: String = "https://api.iterable.com",
+  mergeNestedObjects: Boolean = false,
+  preferUserId: Boolean = false,
   echoOnly: Boolean = false,
 )
 
@@ -31,21 +33,37 @@ object Config {
           case name if name.endsWith(".json") => success
           case _ => failure("Filename must end with .csv, .tsv, or .json")
         }
-        .text("Path to your input file.  Must end with .csv, .tsv, or .json"),
+        .text(addBlankLine("Path to your input file.  Must end with .csv, .tsv, or .json")),
       opt[String]('k', "api-key")
         .required()
         .action((apiKey, c) => c.copy(apiKey = apiKey))
         .valueName("<api-key>")
-        .text("Your Iterable API key."),
+        .text(addBlankLine("Your Iterable API key.")),
       opt[Int]('b', "batch-size")
-        .valueName("<items>")
+        .valueName("<n>")
         .action((batchSize, c) => c.copy(desiredBatchSize = batchSize))
-        .text("Optional.  The desired number of users to send with each bulk request.  If not set, the batch will be constrained by the 4MB limit set by the API."),
+        .text(addBlankLine(
+          """Optional.  The desired number of users to send with each bulk request.  If not set,
+            |the batch size will be constrained by the 4MB payload size limit set by the API."""
+            .stripMargin)),
+      opt[Unit]("merge-nested-objects")
+        .action((_, c) => c.copy(mergeNestedObjects = true))
+        .text(addBlankLine(
+          """Merge top level objects instead of overwriting. For example, if user profile has data:
+            |{ mySettings: { mobile: true }} and the user being updated has data: 
+            |{ mySettings: { email: true }}, the resulting profile will be: 
+            |{ mySettings: { mobile: true, email: true }}"""
+            .stripMargin)),
+      opt[Unit]("prefer-user-id")
+        .action((_, c) => c.copy(preferUserId = true))
+        .text(addBlankLine("Create a new users with the specified userId if one does not yet exist.")),
       opt[Unit]("echo-only")
         .action((_, c) => c.copy(echoOnly = true))
         .text("Dumps the API payloads but does not send them."),
     )
   }
+
+  def addBlankLine(s: String) = s"${s}\n "
 
   def apply(args: Array[String]): Option[Config] = OParser.parse(parser, args, Config())
 }

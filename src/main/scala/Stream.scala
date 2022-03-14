@@ -39,12 +39,18 @@ object Stream {
     }
   }
 
+  private def applyDefaults(config: Config, rqst: ApiUserUpdateRequest) = 
+    rqst.copy(
+      mergeNestedObjects = rqst.mergeNestedObjects.orElse(Some(config.mergeNestedObjects)),
+      preferUserId = rqst.preferUserId.orElse(Some(config.preferUserId))
+    )
+
   def payloadSource(config: Config, parser: FileIngestionParser, lineSource: Source[String, NotUsed]): Source[(BulkUserUpdatePayload, Long), NotUsed] = 
     lineSource
       .map(parser.parseUserLine)
       .zipWithIndex
       .divertTo(Sink.foreach(s => System.err.println(s"LINE ${s._2 + 1 + 1}: ${s._1}")), _._1.isLeft)
-      .collect { case (Right(rqst), _) => Json.toJsObject(rqst) }
+      .collect { case (Right(rqst), _) => Json.toJsObject(applyDefaults(config, rqst)) }
       .statefulMapConcat { () => 
         var bufferSize, itemCount = 0
 
