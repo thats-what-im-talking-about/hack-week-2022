@@ -9,12 +9,15 @@ case class Config(
   payloadSize: Int = 4000000,
   desiredBatchSize: Int = Integer.MAX_VALUE,
   apiBaseUrl: String = "https://api.iterable.com",
-  mergeNestedObjects: Boolean = false,
-  preferUserId: Boolean = false,
+  mergeNestedObjects: Boolean = Config.mergeNestedObjectsDefault,
+  preferUserId: Boolean = Config.preferUserIdDefault,
   echoOnly: Boolean = false,
 )
 
 object Config {
+  val preferUserIdDefault = false
+  val mergeNestedObjectsDefault = false
+
   val execName = "bulkUserUpdate"
   import scopt.OParser
   val builder = OParser.builder[Config]

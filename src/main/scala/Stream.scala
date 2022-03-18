@@ -39,10 +39,14 @@ object Stream {
     }
   }
 
+  // If the request specifies a setting, use it.  Otherwise, apply the setting that is in the 
+  // Config (and possibly changed by the command line options).  If the result is the same as
+  // the default for the API, then just filter it out so that we don't clutter up the payloads
+  // with extra stuff that is the default behavior for the API anyway.
   private def applyDefaults(config: Config, rqst: ApiUserUpdateRequest) = 
     rqst.copy(
-      mergeNestedObjects = rqst.mergeNestedObjects.orElse(Some(config.mergeNestedObjects)),
-      preferUserId = rqst.preferUserId.orElse(Some(config.preferUserId))
+      mergeNestedObjects = rqst.mergeNestedObjects.orElse(Some(config.mergeNestedObjects)).filter(_ == Config.mergeNestedObjectsDefault),
+      preferUserId = rqst.preferUserId.orElse(Some(config.preferUserId)).filter(_ == Config.preferUserIdDefault)
     )
 
   def payloadSource(config: Config, parser: FileIngestionParser, lineSource: Source[String, NotUsed]): Source[(BulkUserUpdatePayload, Long), NotUsed] = 
@@ -56,12 +60,12 @@ object Stream {
 
         {
           case rqst =>
-            itemCount += 1
             bufferSize += rqst.toString.length
             if(bufferSize > config.payloadSize || itemCount >= config.desiredBatchSize) {
               bufferSize = 0
               itemCount = 0
             }
+            itemCount += 1
             List((rqst, bufferSize == 0))
         }
       }
@@ -79,11 +83,11 @@ object Stream {
     val merge = b.add(MergePreferred[(BulkUserUpdatePayload, Long)](1, eagerComplete = true))
     val (retryQueue, retrySource) = Source.queue[(BulkUserUpdatePayload, Long)](10).preMaterialize()
     val divertRetries = b.add(Flow[(Int, BulkUserUpdatePayload, Long)].divertTo(
-      Sink.foreach { case (_, payload, batchNo) => 
+      that = Sink.foreach { case (_, payload, batchNo) => 
         println(s"Retrying batchNo ${batchNo} due to 429")
         retryQueue.offer((payload, batchNo)) 
       }, 
-      { case (status, _, _) => status == 429 }
+      when = { case (status, _, _) => status == 429 }
     ))
     
     merge ~> process ~> throttle ~> divertRetries  // 429's are diverted to the retrySource
