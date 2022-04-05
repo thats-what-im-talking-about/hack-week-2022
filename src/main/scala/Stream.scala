@@ -45,8 +45,8 @@ object Stream {
   // with extra stuff that is the default behavior for the API anyway.
   private def applyDefaults(config: Config, rqst: ApiUserUpdateRequest) = 
     rqst.copy(
-      mergeNestedObjects = rqst.mergeNestedObjects.orElse(Some(config.mergeNestedObjects)).filter(_ == Config.mergeNestedObjectsDefault),
-      preferUserId = rqst.preferUserId.orElse(Some(config.preferUserId)).filter(_ == Config.preferUserIdDefault)
+      mergeNestedObjects = rqst.mergeNestedObjects.orElse(Some(config.mergeNestedObjects)).filterNot(_ == Config.mergeNestedObjectsDefault),
+      preferUserId = rqst.preferUserId.orElse(Some(config.preferUserId)).filterNot(_ == Config.preferUserIdDefault)
     )
 
   def payloadSource(config: Config, parser: FileIngestionParser, lineSource: Source[String, NotUsed]): Source[(BulkUserUpdatePayload, Long), NotUsed] = 
