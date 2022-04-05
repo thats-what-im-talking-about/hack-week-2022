@@ -59,18 +59,19 @@ object Stream {
         var bufferSize, itemCount = 0
 
         {
-          case rqst =>
-            bufferSize += rqst.toString.length
-            if(bufferSize > config.payloadSize || itemCount >= config.desiredBatchSize) {
+          case singleRecordJson =>
+            bufferSize += singleRecordJson.toString.length
+            val isFullPayload = bufferSize > config.payloadSize || itemCount >= config.desiredBatchSize
+            if(isFullPayload) {
               bufferSize = 0
               itemCount = 0
             }
             itemCount += 1
-            List((rqst, bufferSize == 0))
+            List((singleRecordJson, isFullPayload))
         }
       }
-      .splitWhen { case (_, newBuffer) => newBuffer }
-      .fold(BulkUserUpdatePayload()) { case (result, (rqst, _)) => result.copy(users = result.users :+ rqst) }
+      .splitWhen { case (_, isFullPayload) => isFullPayload }
+      .fold(BulkUserUpdatePayload()) { case (result, (singleRecordJson, _)) => result.copy(users = result.users :+ singleRecordJson) }
       .concatSubstreams
       .zipWithIndex
 
