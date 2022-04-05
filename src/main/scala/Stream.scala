@@ -60,7 +60,7 @@ object Stream {
 
         {
           case singleRecordJson =>
-            bufferSize += singleRecordJson.toString.length
+            bufferSize += singleRecordJson.toString.getBytes(java.nio.charset.Charset.forName("UTF-8")).length
             val isFullPayload = bufferSize > config.payloadSize || itemCount >= config.desiredBatchSize
             if(isFullPayload) {
               bufferSize = 0
