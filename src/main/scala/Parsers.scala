@@ -14,7 +14,6 @@ import play.api.libs.json.JsError
 
 trait FileIngestionParser {
   def parseUserLine(line: String): Either[Error, ApiUserUpdateRequest]
-  def parseEventLine(line: String): Either[Error, TrackRequest]
 }
 
 trait DelimitedParser {
@@ -40,8 +39,6 @@ object JsonParser extends FileIngestionParser {
       case JsError(errors) => Left(Error(errors.toString, ParseError))
     }
   }
-
-  override def parseEventLine(line: String): Either[Error,TrackRequest] = ???
 }
 
 object CsvParser extends CSVParser(defaultCSVFormat) with DelimitedParser
@@ -69,33 +66,6 @@ class FileIngestionDelimitedParser(parser: DelimitedParser, header: String) exte
           FieldNames.MergeNestedObjects,
         )
         ApiUserUpdateRequest(email, createDataFields(dataFieldVals), userId, preferUserId, mergeNestedObjects)
-      }
-    }
-
-  override def parseEventLine(line: String): Either[Error, TrackRequest] =
-    parseDelimitedLine(line) { fieldVals =>
-      Try {
-        val fieldValsMap = fieldVals.toMap
-        val email = fieldValsMap.get(FieldNames.Email).flatten
-        val eventName = fieldValsMap(FieldNames.EventName).get
-        val id = fieldValsMap.get(FieldNames.Id).flatten
-        val createdAt = fieldValsMap.get(FieldNames.CreatedAt).flatten.map(_.toLong)
-        val userId = fieldValsMap.get(FieldNames.UserId).flatten
-        val campaignId = fieldValsMap.get(FieldNames.CampaignId).flatten.map(_.toLong)
-        val templateId = fieldValsMap.get(FieldNames.TemplateId).flatten.map(_.toLong)
-
-        val dataFieldVals = fieldValsMap -- Set(
-          FieldNames.Email,
-          FieldNames.EventName,
-          FieldNames.Id,
-          FieldNames.CreatedAt,
-          FieldNames.UserId,
-          FieldNames.CampaignId,
-          FieldNames.TemplateId,
-        )
-
-        val datafields = createDataFields(dataFieldVals)
-        TrackRequest(email, eventName, id, createdAt, datafields, userId, campaignId, templateId)
       }
     }
 
